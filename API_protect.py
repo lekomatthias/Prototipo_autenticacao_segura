@@ -22,20 +22,21 @@ class API_protect(Server):
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
         user.send(public_pem.decode())
-        sleep(0.2)
+        sleep(0.1)
 
         while self.running:
             try:
                 user.send("Validando o token...")
+                sleep(0.05)
                 user.send("Envie seu token.")
-                encrypted_token_b64 = user.recv()
+                token = user.recv().strip()
                 self.public_server_key = RSA.LoadKey(self.server_key_name)
-                token = RSA.Decrypt(self.private_client_key, b64decode(encrypted_token_b64))
                 if not JWT.verify_jwt(token, self.public_server_key):
                     user.send("Token inválido ou expirado.")
                     user.send("Tente acessar o servidor de autenticação entes deste.")
                     self.del_user(user)
                     break
+                user.send("Token validado com sucesso!")
 
                 user.send("Deseja obter umas infos diferenciadas? [s/n]")
                 encrypted_msg_b64 = user.recv()

@@ -2,6 +2,7 @@
 import os
 from socket import socket
 from base64 import b64encode
+from time import sleep
 
 from Client import Client
 from RSA import RSA
@@ -20,9 +21,11 @@ class Client_server(Client):
                 self.server.settimeout(None)
             self.running = False
         if msg == "Envie seu token.":
-            encrypted = RSA.Encrypt(self.server_key, self.token)
-            encrypted_b64 = b64encode(encrypted)
-            self.server.send(encrypted_b64)
+            try:
+                self.server.send(self.token.encode())
+                print("Token enviado ao servidor.")
+            except Exception as e:
+                print(f"Erro ao criptografar/enviar o token: {e}")
         else:
             print(msg)
 

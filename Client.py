@@ -37,6 +37,7 @@ class Client:
                 self.Verify_response(msg)
 
             except:
+                print("Erro em recv")
                 self.running = False
 
     def connect(self, ip_host):

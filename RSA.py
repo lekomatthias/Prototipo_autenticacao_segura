@@ -56,3 +56,8 @@ if __name__ == "__main__":
     Pr, Pu = RSA.KeyGen()
     c = RSA.Encrypt(Pu, mensagem)
     print(f"mensagem: {RSA.Decrypt(Pr, c)}")
+
+    nome = "teste_chave_publica.pem"
+    RSA.SaveKey(Pu, nome)
+    if Pu == RSA.LoadKey(nome):
+        print("senha salva e carregada corretamente!")
