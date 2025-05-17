@@ -18,7 +18,7 @@ class Server:
 
         self.data_base = DataBase(data_base_name)
         self.private_client_key, self.public_client_key = RSA.KeyGen()
-        self.private_server_key, self.public_server_key = RSA.KeyGen()
+        self.server_key_name = "Chave_publica_servidores.pem"
 
     def listen_conect(self):
         while self.running:

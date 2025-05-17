@@ -8,6 +8,12 @@ from RSA import RSA
 from JWT import JWT
 
 class API_autentication(Server):
+    def __init__(self, port, buffer_size=4096, data_base_name="dados.db"):
+        super().__init__(port=port, 
+                         buffer_size=buffer_size, 
+                         data_base_name=data_base_name)
+        self.private_server_key, self.public_server_key = RSA.KeyGen()
+        RSA.SaveKey(self.public_server_key, self.server_key_name)
 
     def client_command(self, user):
         # Enviar chave pública ao cliente

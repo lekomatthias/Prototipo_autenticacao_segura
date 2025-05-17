@@ -1,5 +1,6 @@
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
+import os
 
 class RSA:
     @staticmethod
@@ -32,6 +33,22 @@ class RSA:
         ).decode()
         return message
 
+    @staticmethod
+    def SaveKey(key, filename):
+        if os.path.exists(filename):
+            os.remove(filename)
+
+        pem = key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        with open(filename, "wb") as f:
+            f.write(pem)
+
+    @staticmethod
+    def LoadKey(filename):
+        with open(filename, "rb") as f:
+            return serialization.load_pem_public_key(f.read())
 
 if __name__ == "__main__":
     mensagem = "Mensagem secreta com RSA!"

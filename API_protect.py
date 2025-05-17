@@ -13,6 +13,7 @@ class API_protect(Server):
                        buffer_size=buffer_size, 
                        data_base_name=data_base_name)
         self.secure_data = "__dados_seguros_do_servidos__"
+        self.public_server_key = None
 
     def client_command(self, user):
         # Enviar chave pública ao cliente
@@ -25,10 +26,12 @@ class API_protect(Server):
 
         while self.running:
             try:
+                user.send("Validando o token...")
                 user.send("Envie seu token.")
                 encrypted_token_b64 = user.recv()
+                self.public_server_key = RSA.LoadKey(self.server_key_name)
                 token = RSA.Decrypt(self.private_client_key, b64decode(encrypted_token_b64))
-                if not JWT.verify_jwt(token):
+                if not JWT.verify_jwt(token, self.public_server_key):
                     user.send("Token inválido ou expirado.")
                     user.send("Tente acessar o servidor de autenticação entes deste.")
                     self.del_user(user)
