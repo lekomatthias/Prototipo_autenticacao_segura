@@ -1,6 +1,5 @@
 
 import sys
-import os
 from socket import AF_INET, socket, SOCK_STREAM, gethostbyname, gethostname
 from threading import Thread
 from cryptography.hazmat.primitives import serialization
@@ -17,11 +16,14 @@ class Client:
         self.buffer_size = 4096
         self.running = False
         self.server_key = None
-        self.token = None
+        self.token = "token"
 
     def show_IP_client(self):
         ip_local = gethostbyname(gethostname())
         print(f'O seu IP local é: {ip_local}')
+
+    def Verify_response(self, msg):
+            print(msg)
 
     def recv(self):
         while self.running:
@@ -32,18 +34,7 @@ class Client:
 
             try:
                 msg = data.decode('utf-8').strip()
-                print(msg)
-                if msg == "Autenticação válida.":
-                    self.server.settimeout(2)
-                    try:
-                        token_b64 = self.server.recv(self.buffer_size).decode().strip()
-                        self.token = token_b64
-                        print(f"Token recebido com sucesso!")
-                    except socket.timeout:
-                        print("Token não recebido a tempo!")
-                    finally:
-                        self.server.settimeout(None)
-                    self.running = False
+                self.Verify_response(msg)
 
             except:
                 self.running = False
@@ -105,31 +96,5 @@ class Client:
         '''Ao rodar quero que a parte do cliente decida qual servidor conectar'''
         
         while True:
-            self.show_IP_client()
-            server = input("Digite o serviço (ou 'exit' para encerrar):\n1 - Autenticação\n2 - Informação (protegida)\n")
-            if server == "1":
-                print("Autenticação selecionada.")
-                self.port = 6668
-                print("Informação selecionada.")
-            elif server == "2":
-                self.port = 7778
-            elif server == "exit":
-                break
-            else:
-                if os.name == 'nt': os.system('cls')
-                else: os.system('clear')
-                continue
-
-            ip_host = input("Digite o IP do servidor para se conectar (ou 'exit' para encerrar): ")
-
-            if ip_host.lower() == 'exit':
-                print("Encerrando o cliente.")
-                break
-
-            if self.connect(ip_host):
-                self.messenger()
-
-if __name__ == "__main__":
-
-    cliente = Client()
-    cliente.run()
+            msg = input("Client básico rodando, envie 'exit' para sair.")
+            if msg == "exit": break

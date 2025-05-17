@@ -15,7 +15,7 @@ class API_autentication(Server):
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
-        user.send(public_pem.decode())  # Envia como string PEM
+        user.send(public_pem.decode())
         sleep(0.2)
 
         while self.running:
