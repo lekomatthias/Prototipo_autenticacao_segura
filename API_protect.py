@@ -3,7 +3,12 @@ from time import sleep
 
 from Server import Server
 from RSA import RSA
-from JWT import JWT
+
+hmac = True
+if not hmac:
+    from JWT import JWT
+else:
+    from HMAC import JWT_HS256 as JWT
 
 class API_protect(Server):
 
@@ -19,8 +24,13 @@ class API_protect(Server):
         user.aes_send("Envie seu token.")
         token = user.aes_recv()
 
-        self.public_server_key = RSA.LoadKey(self.server_key_name)
-        if not JWT.verify_jwt(token, self.public_server_key):
+        if not hmac:
+            self.public_server_key = RSA.LoadKey(self.server_key_name)
+            verifyed = JWT.verify_jwt(token, self.public_server_key)
+        else:
+            secret = b"Troque-por-32-bytes-aleatorios-&-secretos"
+            verifyed = JWT.verify_jwt(token, secret)
+        if not verifyed:
             user.aes_send("Token inválido ou expirado.")
             user.aes_send("Tente acessar o servidor de autenticação entes deste.")
             self.del_user(user)

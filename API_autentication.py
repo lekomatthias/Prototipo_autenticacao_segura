@@ -3,7 +3,12 @@ from time import time, sleep
 
 from Server import Server
 from RSA import RSA
-from JWT import JWT
+
+hmac = True
+if not hmac:
+    from JWT import JWT
+else:
+    from HMAC import JWT_HS256 as JWT
 
 class API_autentication(Server):
     def __init__(self, port, buffer_size=4096, data_base_name="dados.db"):
@@ -34,7 +39,11 @@ class API_autentication(Server):
                     "user_id": str(user.IP),
                     "exp": int(time()) + 300
                 }
-                token = JWT.create_jwt(payload, self.private_server_key)
+                if not hmac:
+                    token = JWT.create_jwt(payload, self.private_server_key)
+                else:
+                    secret = b"Troque-por-32-bytes-aleatorios-&-secretos"
+                    token = JWT.create_jwt(payload, secret)
                 user.aes_send(token)
 
                 self.del_user(user)
