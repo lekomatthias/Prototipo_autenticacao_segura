@@ -1,20 +1,19 @@
 
 import os
 from socket import socket
-from base64 import b64encode
-from time import sleep
 
 from Client import Client
-from RSA import RSA
+from AES import AES
 
-class Client_server(Client):
+class Client_API(Client):
     def Verify_response(self, msg):
         if msg == "Autenticação válida.":
             self.server.settimeout(2)
             try:
-                token_b64 = self.server.recv(self.buffer_size).decode().strip()
-                self.token = token_b64
-                print("Token recebido com sucesso!")
+                data = self.server.recv(self.buffer_size)
+                encrypted_token_str = data.decode('utf-8')
+                self.token = AES.Decrypt(self.simetric_key, encrypted_token_str)
+                print(f"Token recebido com sucesso!")
             except socket.timeout:
                 print("Token não recebido a tempo!")
             finally:
@@ -22,7 +21,7 @@ class Client_server(Client):
             self.running = False
         if msg == "Envie seu token.":
             try:
-                self.server.send(self.token.encode())
+                self.server.send(AES.Encrypt(self.simetric_key, self.token).encode('utf-8'))
                 print("Token enviado ao servidor.")
             except Exception as e:
                 print(f"Erro ao criptografar/enviar o token: {e}")
@@ -59,5 +58,5 @@ class Client_server(Client):
 
 if __name__ == "__main__":
 
-    cliente = Client_server()
+    cliente = Client_API()
     cliente.run()

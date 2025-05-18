@@ -1,6 +1,4 @@
 
-from cryptography.hazmat.primitives import serialization
-from base64 import b64decode
 from time import time, sleep
 
 from Server import Server
@@ -16,40 +14,28 @@ class API_autentication(Server):
         RSA.SaveKey(self.public_server_key, self.server_key_name)
 
     def client_command(self, user):
-        # Enviar chave pública ao cliente
-        public_pem = self.public_client_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
-        user.send(public_pem.decode())
-        sleep(0.2)
+        sleep(0.1)
 
         while self.running:
             try:
-                user.send("Digite o usuário:")
-                encrypted_username_b64 = user.recv()
-                if not encrypted_username_b64:
-                    raise ConnectionResetError
-                username = RSA.Decrypt(self.private_client_key, b64decode(encrypted_username_b64))
+                user.aes_send("Digite o usuário:")
+                username = user.aes_recv()
 
-                user.send("Digite a senha:")
-                encrypted_password_b64 = user.recv()
-                if not encrypted_password_b64:
-                    raise ConnectionResetError
-                password = RSA.Decrypt(self.private_client_key, b64decode(encrypted_password_b64))
+                user.aes_send("Digite a senha:")
+                password = user.aes_recv()
 
                 if not self.data_base.check(username, password):
-                    user.send("Usuário ou senha inválido.")
+                    user.aes_send("Usuário ou senha inválido.")
                     continue
 
-                user.send("Autenticação válida.")
+                user.aes_send("Autenticação válida.")
                 print(f"{user.IP} foi autenticado.")
                 payload = {
                     "user_id": str(user.IP),
                     "exp": int(time()) + 300
                 }
                 token = JWT.create_jwt(payload, self.private_server_key)
-                user.send(token)
+                user.aes_send(token)
 
                 self.del_user(user)
                 break

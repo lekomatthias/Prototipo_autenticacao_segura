@@ -1,7 +1,9 @@
 from socket import AF_INET, socket, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR, gethostbyname, gethostname
+from cryptography.hazmat.primitives import serialization
 from threading import Thread
+from base64 import b64decode
 
-from Server_user import User
+from User import User
 from DataBase import DataBase
 from RSA import RSA
 
@@ -20,6 +22,29 @@ class Server:
         self.private_client_key, self.public_client_key = RSA.KeyGen()
         self.server_key_name = "Chave_publica_servidores.pem"
 
+    def client_command(self, user):
+        while self.running:
+            try:
+                user.aes_send("Servidor base rodando, esperando 'exit' para sair...")
+                msg = user.aes_recv()
+                if msg.lower() == "exit": break
+            except Exception as e:
+                print(f"{user.IP} foi desconectado.\nErro: {e}")
+                self.del_user(user)
+                break
+
+    def Switch_key(self, user):
+        public_pem = self.public_client_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        user.send(public_pem.decode())
+
+        encrypted_aes_key = b64decode(user.recv())
+        aes_key_hex_str = RSA.Decrypt(self.private_client_key, encrypted_aes_key)
+
+        user.aes_key = bytes.fromhex(aes_key_hex_str)
+        print(f"Chave AES configurada para o usuário {user.IP}")
+
     def listen_conect(self):
         while self.running:
             try:
@@ -27,6 +52,8 @@ class Server:
                 user = User(client, client_IP, self)
                 self.users.append(user)
                 print(f"{user.IP} se conectou. Total de usuários: {len(self.users)}")
+                
+                self.Switch_key(user)
                 Thread(target=self.client_command, args=(user,)).start()
             except Exception as e:
                 print("Erro ao aceitar conexão:", e)
@@ -54,16 +81,6 @@ class Server:
         except:
             pass
         print("Servidor encerrado.")
-
-    def client_command(self, user):
-        while self.running:
-            try:
-                user.send("Servidor base rodando, esperando 'exit' para sair...")
-                if user.recv() == "exit": break
-            except Exception as e:
-                print(f"{user.IP} foi desconectado.\nErro: {e}")
-                self.del_user(user)
-                break
     
     def run(self):
         try:
@@ -90,3 +107,7 @@ class Server:
         except Exception as e:
             print("Erro na hospedagem do servidor:", e)
 
+if __name__ == "__main__":
+
+    server = Server(port=6668)
+    server.run()

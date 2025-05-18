@@ -7,6 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from base64 import b64encode
 
 from RSA import RSA
+from AES import AES
 
 class Client:
     def __init__(self):
@@ -17,6 +18,7 @@ class Client:
         self.running = False
         self.server_key = None
         self.token = "token"
+        self.simetric_key = AES.Generate_key()
 
     def show_IP_client(self):
         ip_local = gethostbyname(gethostname())
@@ -25,19 +27,33 @@ class Client:
     def Verify_response(self, msg):
             print(msg)
 
+    def Switch_key(self):
+        key_data = self.server.recv(self.buffer_size)
+        self.server_key = serialization.load_pem_public_key(
+            key_data,
+            backend=default_backend())
+
+        simetric_key_str = self.simetric_key.hex()
+        encrypted_key = RSA.Encrypt(self.server_key, simetric_key_str)
+
+        encrypted_key_b64 = b64encode(encrypted_key)
+        self.server.send(encrypted_key_b64)
+
     def recv(self):
         while self.running:
             data = self.server.recv(self.buffer_size)
             if not data:
                 print("Conexão encerrada pelo servidor.")
                 self.running = False
+                break
 
             try:
-                msg = data.decode('utf-8').strip()
-                self.Verify_response(msg)
+                encrypted = data.decode('utf-8').strip()
+                decrypted = AES.Decrypt(self.simetric_key, encrypted)
+                self.Verify_response(decrypted)
 
-            except:
-                print("Erro em recv")
+            except Exception as e:
+                print(f"Erro em recv: {e}")
                 self.running = False
 
     def connect(self, ip_host):
@@ -46,14 +62,7 @@ class Client:
             self.server.connect((ip_host, self.port))
             self.running = True
 
-            # Receber chave pública do servidor
-            key_data = self.server.recv(self.buffer_size).decode()
-            self.server_key = serialization.load_pem_public_key(
-                key_data.encode(),
-                backend=default_backend()
-            )
-            print("Chave pública recebida.")
-
+            self.Switch_key()
             self.thread = Thread(target=self.recv)
             self.thread.start()
             print("Conectado ao servidor.")
@@ -75,7 +84,7 @@ class Client:
         while self.running:
             try:
                 data = input()
-                # ajuste das linhas do terminal
+                # ajuste de linhas no terminal
                 sys.stdout.write("\033[A")
                 sys.stdout.write("\033[K")
 
@@ -83,10 +92,8 @@ class Client:
                     self.disconnect()
                     break
 
-                # Criptografar e enviar com base64
-                encrypted = RSA.Encrypt(self.server_key, data)
-                encrypted_b64 = b64encode(encrypted)
-                self.server.send(encrypted_b64)
+                encrypted = AES.Encrypt(self.simetric_key, data)
+                self.server.send(encrypted.encode('utf-8'))
 
             except Exception as e:
                 print(f"Erro no envio: {e}")
@@ -99,3 +106,8 @@ class Client:
         while True:
             msg = input("Client básico rodando, envie 'exit' para sair.")
             if msg == "exit": break
+
+if __name__ == "__main__":
+
+    client = Client()
+    client.run()

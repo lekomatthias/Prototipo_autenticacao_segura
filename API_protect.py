@@ -1,5 +1,4 @@
-from cryptography.hazmat.primitives import serialization
-from base64 import b64decode
+
 from time import sleep
 
 from Server import Server
@@ -15,38 +14,37 @@ class API_protect(Server):
         self.secure_data = "__dados_seguros_do_servidos__"
         self.public_server_key = None
 
+    def Token_validation(self, user):
+        user.aes_send("Validando o token...")
+        user.aes_send("Envie seu token.")
+        token = user.aes_recv()
+
+        self.public_server_key = RSA.LoadKey(self.server_key_name)
+        if not JWT.verify_jwt(token, self.public_server_key):
+            user.aes_send("Token inválido ou expirado.")
+            user.aes_send("Tente acessar o servidor de autenticação entes deste.")
+            self.del_user(user)
+            return
+        user.aes_send("Token validado com sucesso!")
+
     def client_command(self, user):
-        # Enviar chave pública ao cliente
-        public_pem = self.public_client_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
-        user.send(public_pem.decode())
+        self.Token_validation(user)
         sleep(0.1)
 
         while self.running:
             try:
-                user.send("Validando o token...")
-                sleep(0.05)
-                user.send("Envie seu token.")
-                token = user.recv().strip()
-                self.public_server_key = RSA.LoadKey(self.server_key_name)
-                if not JWT.verify_jwt(token, self.public_server_key):
-                    user.send("Token inválido ou expirado.")
-                    user.send("Tente acessar o servidor de autenticação entes deste.")
-                    self.del_user(user)
-                    break
-                user.send("Token validado com sucesso!")
-
-                user.send("Deseja obter umas infos diferenciadas? [s/n]")
-                encrypted_msg_b64 = user.recv()
-                msg = RSA.Decrypt(self.private_client_key, b64decode(encrypted_msg_b64))
+                user.aes_send("Deseja obter umas infos diferenciadas? [s/n]")
+                msg = user.aes_recv()
 
                 if msg == "s":
-                    user.send(self.secure_data)
+                    user.aes_send(self.secure_data)
                 elif msg == "n":
-                    user.send("Então tchau!")
+                    user.aes_send("Então tchau!")
+                else:
+                    user.aes_send("Opção inválida!")
+                    continue
 
+                sleep(0.2)
                 self.del_user(user)
                 break
 
