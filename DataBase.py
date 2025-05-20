@@ -5,6 +5,7 @@ class DataBase:
     def __init__(self, db_name="dados.db"):
         self.db_name = db_name
         self._create_table()
+        self.append("bob", "1234")
 
     def _create_table(self):
         with sqlite3.connect(self.db_name) as con:

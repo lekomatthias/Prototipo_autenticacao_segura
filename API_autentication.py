@@ -3,20 +3,17 @@ from time import time, sleep
 
 from Server import Server
 from RSA import RSA
-
-hmac = True
-if not hmac:
-    from JWT import JWT
-else:
-    from HMAC import JWT_HS256 as JWT
+from JWT import JWT
+from HMAC import JWT_HS256 as JWTH
 
 class API_autentication(Server):
-    def __init__(self, port, buffer_size=4096, data_base_name="dados.db"):
+    def __init__(self, port, buffer_size=4096, data_base_name="dados.db", hmac=False):
         super().__init__(port=port, 
                          buffer_size=buffer_size, 
                          data_base_name=data_base_name)
         self.private_server_key, self.public_server_key = RSA.KeyGen()
         RSA.SaveKey(self.public_server_key, self.server_key_name)
+        self.hmac = hmac
 
     def client_command(self, user):
         sleep(0.1)
@@ -35,16 +32,19 @@ class API_autentication(Server):
 
                 user.aes_send("Autenticação válida.")
                 print(f"{user.IP} foi autenticado.")
+                time_to_die = 20
                 payload = {
                     "user_id": str(user.IP),
-                    "exp": int(time()) + 300
+                    "exp": int(time()) + time_to_die
                 }
-                if not hmac:
+                if not self.hmac:
                     token = JWT.create_jwt(payload, self.private_server_key)
                 else:
                     secret = b"Troque-por-32-bytes-aleatorios-&-secretos"
-                    token = JWT.create_jwt(payload, secret)
+                    token = JWTH.create_jwt(payload, secret)
+                print(f"Token criado. Expira em {time_to_die} segundos.")
                 user.aes_send(token)
+                print("Token enviado.")
 
                 self.del_user(user)
                 break
@@ -56,5 +56,9 @@ class API_autentication(Server):
 
 if __name__ == "__main__":
 
-    server = API_autentication(port=6668)
+    print("O servidor será usado com hmac ou assinarura RSA?")
+    print("1 - HMAC")
+    print("2 - Assinatura RSA")
+    hmac = True if input() == "1" else False
+    server = API_autentication(port=6668, hmac=hmac)
     server.run()

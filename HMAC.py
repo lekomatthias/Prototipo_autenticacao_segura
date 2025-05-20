@@ -37,14 +37,15 @@ class JWT_HS256:
             header_b64, payload_b64, signature_b64 = token.split('.')
             message = f"{header_b64}.{payload_b64}".encode()
             signature = JWT_HS256.base64url_decode(signature_b64)
-
+            print("Assinatura decodificada no token HMAC.")
             if not hmac.compare_digest(JWT_HS256._tag(secret_key, message), signature):
                 return False
-
+            print("Assinatura verificada com sucesso.")
             payload_json = JWT_HS256.base64url_decode(payload_b64)
             payload = json.loads(payload_json)
 
             if "exp" in payload and time.time() > payload["exp"]:
+                print("Token expirado")
                 return False
 
             return True

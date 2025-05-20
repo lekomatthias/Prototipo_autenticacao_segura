@@ -27,7 +27,9 @@ class Server:
             try:
                 user.aes_send("Servidor base rodando, esperando 'exit' para sair...")
                 msg = user.aes_recv()
-                if msg.lower() == "exit": break
+                if msg.lower() == "exit":
+                    self.del_user(user)
+                    break
             except Exception as e:
                 print(f"{user.IP} foi desconectado.\nErro: {e}")
                 self.del_user(user)
@@ -38,9 +40,11 @@ class Server:
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo)
         user.send(public_pem.decode())
+        print("Chave RSA pública enviada para o usuário.")
 
         encrypted_aes_key = b64decode(user.recv())
         aes_key_hex_str = RSA.Decrypt(self.private_client_key, encrypted_aes_key)
+        print("Chave AES recebida do usuário.")
 
         user.aes_key = bytes.fromhex(aes_key_hex_str)
         print(f"Chave AES configurada para o usuário {user.IP}")
@@ -62,24 +66,18 @@ class Server:
     def del_user(self, user):
         if user in self.users:
             self.users.remove(user)
-        try:
-            user.sock.close()
-        except:
-            pass
+        try: user.sock.close()
+        except: pass
         print(f"{user.IP} foi removido. Total de usuários: {len(self.users)}")
 
     def shutdown(self):
         print("Encerrando servidor...")
         self.running = False
         for user in self.users:
-            try:
-                user.sock.close()
-            except:
-                pass
-        try:
-            self.socket.close()
-        except:
-            pass
+            try: user.sock.close()
+            except: pass
+        try: self.socket.close()
+        except: pass
         print("Servidor encerrado.")
     
     def run(self):
