@@ -85,7 +85,9 @@ class Server:
     def run(self):
         try:
             self.IP = gethostbyname(gethostname())
+            print("Rodando o servidor:", self.__class__.__name__)
             print("O IP que hospedará o servidor é:", self.IP)
+            print("A porta que está sendo utilizada é:", self.port)
 
             self.socket = socket(AF_INET, SOCK_STREAM)
             self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -111,3 +113,4 @@ if __name__ == "__main__":
 
     server = Server(port=6668)
     server.run()
+    
